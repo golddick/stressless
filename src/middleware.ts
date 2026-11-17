@@ -37,7 +37,9 @@ export async function middleware(req: NextRequest) {
   const ok =
     area === 'customer' ? user.role === 'customer'
     : area === 'platform' ? user.role === 'super_admin'
-    : user.role === 'exit_staff' ? p === '/admin/exit' : ['owner', 'manager', 'super_admin'].includes(user.role)
+    : user.role === 'exit_staff'
+      ? p === '/admin/exit' || p === '/admin/orders' || p.startsWith('/admin/orders/')
+      : ['owner', 'manager', 'super_admin'].includes(user.role)
   if (!ok) { const url = req.nextUrl.clone(); url.pathname = home(user.role); url.search = ''; return NextResponse.redirect(url) }
   return NextResponse.next()
 }

@@ -22,7 +22,7 @@ export async function notifyStoreTeam(
   storeId: string,
   type: string,
   body: string,
-  subject = 'stressless alert',
+  subject = 'stressless-pay alert',
   url = '/admin'
 ) {
   const recipients = await getStoreTeam(storeId)

@@ -3,20 +3,20 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { useScanner } from '@/lib/useScanner'
 import { PageHead, StatusPill } from '@/components/ui'
-import { errMsg, fmt } from '@/lib/format'
+import { errMsg, fdate, fmt } from '@/lib/format'
 
 export default function Exit() {
   const video = useRef<HTMLVideoElement>(null)
   const [token, setToken] = useState(''), [manual, setManual] = useState(''), [look, setLook] = useState<any>(null), [note, setNote] = useState('')
   const [error, setError] = useState(''), [done, setDone] = useState<any>(null), [spot, setSpot] = useState<any>(null), [spotNote, setSpotNote] = useState('')
   const busy = useRef(false)
-  const { start, error: camError } = useScanner(video, t => lookup(t))
+  const { start, stop, active, error: camError } = useScanner(video, t => lookup(t))
   useEffect(() => { start() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function lookup(t: string) {
     if (busy.current) return
     busy.current = true; setError('')
-    try { setLook(await api('/api/exit/lookup', { body: { token: t } })); setToken(t) } catch (e) { setError(errMsg(e)); busy.current = false }
+    try { setLook(await api('/api/exit/lookup', { body: { token: t } })); setToken(t); stop() } catch (e) { setError(errMsg(e)); busy.current = false }
   }
   async function decide(result: 'verified' | 'flagged') {
     setError('')
@@ -34,7 +34,10 @@ export default function Exit() {
       <PageHead title="Exit verification" sub="Scan the customer's exit pass, check the cart, then verify or flag." />
       {!look ? (
         <>
-          <div className="scanbox glass" style={{ maxHeight: '46vh' }}><video ref={video} playsInline muted /></div>
+          <div className="scanbox glass" style={{ maxHeight: '46vh', display: active ? undefined : 'none' }}><video ref={video} playsInline muted /></div>
+          <div className="toolbar" style={{ marginTop: 14 }}>
+            <button className="btn g" type="button" onClick={() => active ? stop() : start()}>{active ? 'Turn camera off' : 'Turn camera on'}</button>
+          </div>
           {camError && <p className="err">{camError}</p>}
           <form className="toolbar" style={{ marginTop: 14 }} onSubmit={e => { e.preventDefault(); lookup(manual) }}>
             <input className="input" style={{ flex: 1 }} value={manual} onChange={e => setManual(e.target.value)} placeholder="Or paste the pass code" aria-label="Pass code" /><button className="btn g">Look up</button>
@@ -57,6 +60,24 @@ export default function Exit() {
           ) : (
             <>
               <p className="okmsg">{done.result === 'verified' ? 'Verified. Customer may leave.' : 'Flagged. The store team has been notified.'}</p>
+              {done.result === 'verified' && (
+                <>
+                  <section className="exit-receipt">
+                    <h2>stressless receipt</h2>
+                    <p>{look.store} · {fdate(look.order.createdAt)}</p>
+                    <p>Customer: {look.customer || 'Customer'}</p>
+                    <hr />
+                    {look.items.map((i: any) => <div className="row" key={i.id}><span>{i.name} × {i.quantity}</span><span>{fmt(i.unitPriceMinor * i.quantity)}</span></div>)}
+                    <hr />
+                    <div className="row"><span>Subtotal</span><span>{fmt(look.order.subtotalMinor)}</span></div>
+                    <div className="row"><span>Tax</span><span>{fmt(look.order.taxMinor)}</span></div>
+                    <div className="row"><b>Total paid</b><b>{fmt(look.order.totalMinor)}</b></div>
+                    <p>Order {look.order.id}</p>
+                    <p>Exit verified</p>
+                  </section>
+                  <button className="btn g block" style={{ marginTop: 12 }} onClick={() => window.print()}>Print receipt</button>
+                </>
+              )}
               {spot && <div className="glass card" style={{ margin: '12px 0' }}><b>Spot check</b><p className="mute" style={{ margin: '6px 0 10px' }}>Please check this customer&apos;s bag against the cart.</p>
                 <label className="field">Note<input value={spotNote} onChange={e => setSpotNote(e.target.value)} /></label>
                 <div className="toolbar"><button className="btn p sm" onClick={() => recordSpot('pass')}>Matches</button><button className="btn d sm" onClick={() => recordSpot('fail')}>Does not match</button></div></div>}

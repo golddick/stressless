@@ -53,7 +53,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
       
     </div>
-  )
+  ) 
 
   const mobileTopbar = (
     <div className="mobile-topbar glass">
