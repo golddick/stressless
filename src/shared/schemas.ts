@@ -79,6 +79,16 @@ export const inventoryPatchSchema = z.object({
   delta: z.number().int().optional(),
   lowStockThreshold: z.number().int().min(0).optional()
 })
+export const pushSubscriptionSchema = z.object({
+  subscription: z.object({
+    endpoint: z.string().url().max(2048),
+    keys: z.object({
+      p256dh: z.string().min(1).max(256),
+      auth: z.string().min(1).max(256)
+    })
+  })
+})
+export const pushUnsubscribeSchema = z.object({ endpoint: z.string().url().max(2048) })
 
 export const staffInviteSchema = z.object({
   name: z.string().trim().min(2).max(80),

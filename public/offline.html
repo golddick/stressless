@@ -95,6 +95,29 @@
         border: none;
         color: #2a1f08;
       }
+
+      .spinner {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        flex: none;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-rotate 0.7s linear infinite;
+      }
+
+      .spinner[hidden] { display: none; }
+
+      @keyframes spinner-rotate {
+        to { transform: rotate(360deg); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .spinner { animation-duration: 1.5s; }
+      }
+
+      .pill[aria-busy="true"] { pointer-events: none; }
     </style>
   </head>
   <body>
@@ -107,9 +130,20 @@
       </p>
 
       <div class="meta">
-        <a class="pill primary" href="/">Try again</a>
+        <a class="pill primary" id="try-again" href="/">
+          <span class="spinner" aria-hidden="true" hidden></span>
+          <span>Try again</span>
+        </a>
         <a class="pill" href="/login">Login</a>
       </div>
     </main>
+    <script>
+      const tryAgain = document.getElementById('try-again')
+      tryAgain.addEventListener('click', event => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        tryAgain.setAttribute('aria-busy', 'true')
+        tryAgain.querySelector('.spinner').hidden = false
+      })
+    </script>
   </body>
 </html>

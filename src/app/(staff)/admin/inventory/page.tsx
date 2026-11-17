@@ -16,7 +16,7 @@ export default function Inventory() {
   function setStock(r: any) { const v = window.prompt('Set stock to', String(r.quantity ?? 0)); if (v !== null && v.trim() !== '' && !isNaN(+v)) patch(r, { quantity: Math.max(0, Math.floor(+v)) }) }
   return (
     <div>
-      <PageHead title="Inventory" sub="Stock drops automatically when an order is paid. Low-stock alerts go to owners and managers.">
+      <PageHead title="Inventory" sub="Stock drops automatically when an order is paid. Low-stock alerts go to owners and managers in-app and by email; enable push alerts from the Alerts menu.">
         <select className="input" value={storeId} onChange={e => setStoreId(e.target.value)} aria-label="Store">{stores?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
       </PageHead>
       <DataTable rows={(rows ?? []).map(r => ({ ...r, id: r.productId }))} columns={[

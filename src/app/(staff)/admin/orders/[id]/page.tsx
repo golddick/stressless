@@ -12,7 +12,7 @@ export default function OrderDetail({ params }: { params: Promise<{ id: string }
   const { user } = useSession(), { href } = useSupport()
   const { data: o, refresh } = useData<any>(`/api/admin/orders/${id}`)
   const [note, setNote] = useState(''), [error, setError] = useState('')
-  const readOnly = user?.role === 'super_admin'
+  const readOnly = user?.role !== 'owner' && user?.role !== 'manager'
   async function act(action: 'refund' | 'void' | 'resolve') {
     if (action === 'refund' && !confirm('Refund this order in full?')) return
     setError('')
@@ -44,7 +44,7 @@ export default function OrderDetail({ params }: { params: Promise<{ id: string }
         </div>
         <div className="glass card">
           <h3 style={{ margin: '0 0 8px' }}>Exit checks</h3>
-          {o.verifications.map((v: any) => <div key={v.id} className="row"><span>{v.result}{v.note && <span className="mute"> · {v.note}</span>}</span><span className="mute">{fdate(v.at)}</span></div>)}
+          {o.verifications.map((v: any) => <div key={v.id} className="row"><span>{v.result}{v.note && <span className="mute"> · {v.note}</span>}<span className="mute"> · Checked by {v.staffName || v.staffEmail || 'Unknown staff'}</span></span><span className="mute">{fdate(v.at)}</span></div>)}
           {!o.verifications.length && <p className="mute">Not scanned at the exit yet.</p>}
           <h3 style={{ margin: '22px 0 8px' }}>Audit trail</h3>
           {o.events.map((e: any) => <div key={e.id} className="row" style={{ fontSize: 13 }}><span>{e.type.replace(/_/g, ' ')}</span><span className="mute">{fdate(e.at)}</span></div>)}

@@ -113,6 +113,12 @@ export const notifications = pgTable('notifications', {
   type: text('type').notNull(), body: text('body').notNull(), read: boolean('read').notNull().default(false), createdAt: at('created_at')
 }, t => [index('notes_user_idx').on(t.userId, t.read)])
 
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: pk('push'), userId: text('user_id').notNull().references(() => users.id),
+  endpoint: text('endpoint').notNull().unique(), p256dh: text('p256dh').notNull(), auth: text('auth').notNull(),
+  createdAt: at('created_at')
+}, t => [index('push_subscriptions_user_idx').on(t.userId)])
+
 export const orderEvents = pgTable('order_events', {
   id: pk('evt'), orderId: text('order_id').references(() => orders.id),
   type: text('type').notNull(), detail: jsonb('detail'), at: at('at')

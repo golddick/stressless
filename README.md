@@ -31,6 +31,7 @@ pnpm dev                 # http://localhost:3000
 * **Sign-in codes in development:** with no `DROPAPHI_API_KEY`, emails and SMS are printed in the terminal running `pnpm dev`. Copy the 6-digit code from there.
 * **Payments in development:** with no `PAYSTACK_SECRET_KEY`, checkout shows a "Simulate successful payment" button that runs the same code path as the real webhook.
 * **Camera on a phone needs HTTPS:** `next dev --experimental-https` or a tunnel.
+* **Push alerts:** generate a VAPID key pair with `pnpm exec web-push generate-vapid-keys` and set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and a `VAPID_SUBJECT` such as `mailto:admin@your-domain`. Push requires HTTPS (localhost is allowed for development); owners and managers can enable it from the in-app Alerts menu.
 * **Demo logins (all by emailed code):** your `SUPER_ADMIN_EMAIL`, `owner@demo.stressless.test`, `manager@demo.stressless.test`, `exit@demo.stressless.test`. Demo store entrance: `/store/demo-store`. Any other email or phone becomes a customer.
 
 ## Production
@@ -54,7 +55,7 @@ pnpm dev                 # http://localhost:3000
 * **Exit passes** are random, tied to one order and one store, and consumed on the first verify or flag. The token is only returned to the customer for paid, unused orders.
 * **Suspending an owner** is checked at sign-in, session start, scan, checkout and every admin request, so their stores stop immediately.
 * **Money** is stored as integer kobo (NGN only). Tax is one per-store rate.
-* **PWA:** `src/app/manifest.ts`, icons in `public/`, and a small service worker (`public/sw.js`, registered in production) so the app installs and its shell opens offline. API calls are never cached.
+* **PWA:** `src/app/manifest.ts`, icons in `public/`, and a service worker (`public/sw.js`) that supports offline shell caching and push alerts. API calls are never cached.
 
 ## What changed from the Nuxt build
 

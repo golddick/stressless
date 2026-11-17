@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stressless-shell-v2'
+const CACHE_NAME = 'stressless-shell-v4'
 const OFFLINE_ROUTES = ['/', '/login', '/forgot-password', '/reset-password', '/profile', '/terms', '/privacy', '/cookies']
 const OFFLINE_ASSETS = ['/', '/offline.html', '/manifest.webmanifest', '/icon.svg', '/apple-touch-icon.png', '/pwa-192.png', '/pwa-512.png']
 const CACHE_TARGETS = [...new Set([...OFFLINE_ASSETS, ...OFFLINE_ROUTES])]
@@ -27,6 +27,33 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
   }
+})
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  const message = event.data.json()
+  const url = new URL(message.url || '/', self.location.origin)
+  const targetUrl = url.origin === self.location.origin ? `${url.pathname}${url.search}${url.hash}` : '/'
+  event.waitUntil(self.registration.showNotification(message.title || 'stressless alert', {
+    body: message.body || '',
+    icon: '/pwa-192.png',
+    badge: '/icon.svg',
+    data: { url: targetUrl }
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin)
+  const path = targetUrl.origin === self.location.origin ? targetUrl.href : self.location.origin
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const client = clients.find((candidate) => new URL(candidate.url).origin === self.location.origin)
+    if (client) {
+      client.navigate(path)
+      return client.focus()
+    }
+    return self.clients.openWindow(path)
+  }))
 })
 
 self.addEventListener('fetch', (event) => {

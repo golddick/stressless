@@ -1,12 +1,24 @@
-import { and, desc, eq, gte, ilike, inArray, lte, or } from 'drizzle-orm'
-import { orders, stores, users } from '@/server/db/schema'
-import { route, query, adminScope, useDB } from '@/server/kit'
+import { and, desc, eq, exists, gte, ilike, inArray, lte, or } from 'drizzle-orm'
+import { exitVerifications, orders, stores, users } from '@/server/db/schema'
+import { route, query, adminScope, assertOwnerActive, requireRole, useDB } from '@/server/kit'
 
 export const GET = route(async (req) => {
-  const scope = await adminScope(req)
+  const user = await requireRole(['super_admin', 'owner', 'manager', 'exit_staff'])
   const q = query(req)
-  const where = [eq(stores.ownerId, scope.ownerId)]
-  if (scope.storeIds) where.push(inArray(stores.id, scope.storeIds))
+  const where = []
+  if (user.role === 'exit_staff') {
+    await assertOwnerActive(useDB(), user.ownerId!)
+    where.push(eq(stores.ownerId, user.ownerId!))
+    where.push(inArray(stores.id, user.storeIds ?? []))
+    where.push(exists(useDB().select({ id: exitVerifications.id }).from(exitVerifications).where(and(
+      eq(exitVerifications.orderId, orders.id),
+      eq(exitVerifications.staffId, user.id)
+    ))))
+  } else {
+    const scope = await adminScope(req)
+    where.push(eq(stores.ownerId, scope.ownerId))
+    if (scope.storeIds) where.push(inArray(stores.id, scope.storeIds))
+  }
   if (q.storeId) where.push(eq(stores.id, q.storeId))
   if (q.status) where.push(eq(orders.status, q.status as any))
   if (q.from) where.push(gte(orders.createdAt, new Date(q.from)))

@@ -1,18 +1,30 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/cart'
 import { fmt } from '@/lib/format'
+import Spinner from '@/components/Spinner'
 
 export default function CartPage() {
   const { cart, store, load, setQty } = useCart(), router = useRouter()
-  useEffect(() => { load().then(ok => { if (!ok) router.replace('/store') }) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    let active = true
+    load().then(ok => {
+      if (!active) return
+      if (!ok) router.replace('/store')
+      else setLoading(false)
+    })
+    return () => { active = false }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div>
       <h1 className="t">Your cart</h1>
       <p className="sub">{store?.name}</p>
-      {cart?.items.length ? (
+      {loading ? (
+        <div className="glass card" role="status"><Spinner /> Loading your cart...</div>
+      ) : cart?.items.length ? (
         <div className="glass card">
           {cart.items.map(i => (
             <div key={i.productId} className="row" style={{ alignItems: 'center' }}>

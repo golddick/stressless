@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Backdrop from '@/components/Backdrop'
 import SiteNav from '@/components/SiteNav'
 import { Button, Card, Field, Input } from '@/components/ui'
+import Spinner from '@/components/Spinner'
 import { api } from '@/lib/api'
 import { useSession } from '@/lib/session'
 import { errMsg } from '@/lib/format'
@@ -66,7 +67,7 @@ export default function SignupPage() {
                 <Input value={identifier} onChange={e => setIdentifier(e.target.value)} autoComplete="username" inputMode="email" placeholder="you@example.com" required />
               </Field>
               {error && <p className="err">{error}</p>}
-              <Button type="submit" className="block" disabled={busy}>{busy ? 'Sending code...' : 'Send code'}</Button>
+              <Button type="submit" className="block" disabled={busy} aria-busy={busy}>{busy && <Spinner />}{busy ? 'Sending code...' : 'Send code'}</Button>
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                 <Link href="/login" className="mute" style={{ fontSize: 14 }}>Already have an account? Log in</Link>
               </div>
@@ -77,7 +78,7 @@ export default function SignupPage() {
                 <Input value={code} onChange={e => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" required />
               </Field>
               {error && <p className="err">{error}</p>}
-              <Button type="submit" className="block" disabled={busy}>{busy ? 'Creating account...' : 'Create account'}</Button>
+              <Button type="submit" className="block" disabled={busy} aria-busy={busy}>{busy && <Spinner />}{busy ? 'Creating account...' : 'Create account'}</Button>
               <button type="button" className="btn g block" style={{ marginTop: 10 }} onClick={() => { setCode(''); setOtpSent(false); setError('') }}>Use a different email or phone</button>
             </form>
           )}

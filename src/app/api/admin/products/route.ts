@@ -2,6 +2,7 @@ import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
 import { categories, inventory, products } from '@/server/db/schema'
 import { productSchema } from '@/shared/schemas'
 import { categoryId } from '@/server/services/catalog'
+import { notifyIfNewlyLowStock } from '@/server/services/lowStock'
 import { route, body, query, parse, fail, adminScope, scopedStore, useDB } from '@/server/kit'
 
 export const GET = route(async (req) => {
@@ -26,12 +27,13 @@ export const POST = route(async (req) => {
   const scope = await adminScope(req, { write: ['owner', 'manager'] })
   const { category, storeId, stock, ...b } = parse(productSchema, await body(req))
   const db = useDB()
+  if (storeId) await scopedStore(db, scope, storeId)
   const [dup] = await db.select({ id: products.id }).from(products).where(and(eq(products.ownerId, scope.ownerId), eq(products.barcode, b.barcode))).limit(1)
   if (dup) throw fail(409, 'A product with this barcode already exists.')
   const [row] = await db.insert(products).values({ ...b, ownerId: scope.ownerId, categoryId: await categoryId(db, scope.ownerId, category) }).returning()
   if (storeId && stock !== undefined) {
-    await scopedStore(db, scope, storeId)
-    await db.insert(inventory).values({ storeId, productId: row.id, quantity: stock }).onConflictDoNothing()
+    const [createdInventory] = await db.insert(inventory).values({ storeId, productId: row.id, quantity: stock }).onConflictDoNothing().returning()
+    if (createdInventory) await notifyIfNewlyLowStock(storeId, row.name, null, createdInventory)
   }
   return row
 })

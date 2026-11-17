@@ -4,17 +4,19 @@ import { useRouter } from 'next/navigation'
 import { useData, useSupport } from '@/lib/hooks'
 import { DataTable, PageHead, StatusPill } from '@/components/ui'
 import { fdate, fmt } from '@/lib/format'
+import { useSession } from '@/lib/session'
 
 const STATUSES = ['pending_payment', 'paid', 'verified', 'flagged', 'completed', 'refunded', 'abandoned']
 
 export default function Orders() {
   const router = useRouter(), { href } = useSupport()
+  const { user } = useSession()
   const [status, setStatus] = useState(''), [q, setQ] = useState('')
   const query = useMemo(() => ({ status, q }), [status, q])
   const { data: orders } = useData<any[]>('/api/admin/orders', query, { poll: 10000 })
   return (
     <div>
-      <PageHead title="Orders" sub="Filter, open an order, review flags, refund or void." />
+      <PageHead title={user?.role === 'exit_staff' ? 'Checked orders' : 'Orders'} sub={user?.role === 'exit_staff' ? 'Orders you checked at the exit.' : 'Filter, open an order, review flags, refund or void.'} />
       <div className="toolbar">
         <input className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="Search order or customer" aria-label="Search" />
         <select className="input" value={status} onChange={e => setStatus(e.target.value)} aria-label="Status"><option value="">All statuses</option>{STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select>

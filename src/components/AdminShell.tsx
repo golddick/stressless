@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useSession } from '@/lib/session'
 import { useData, useSupport } from '@/lib/hooks'
 import { api } from '@/lib/api'
+import PushNotificationControl from '@/components/PushNotificationControl'
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useSession()
@@ -15,7 +16,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const platform = path.startsWith('/platform')
   const items: [string, string][] = platform
     ? [['/platform', 'Overview'], ['/platform/owners', 'Owners'], ['/platform/stores', 'Stores'], ['/platform/reports', 'Reports'], ['/platform/settings', 'Settings']]
-    : user?.role === 'exit_staff' ? [['/admin/exit', 'Exit verification']]
+    : user?.role === 'exit_staff' ? [['/admin/exit', 'Exit verification'], ['/admin/orders', 'Checked orders']]
     : [['/admin', 'Dashboard'], ['/admin/orders', 'Orders'], ['/admin/products', 'Products'], ['/admin/inventory', 'Inventory'], ['/admin/stores', 'Stores'],
        ['/admin/exit', 'Exit verification'], ['/admin/audits', 'Spot checks'], ['/admin/staff', 'Staff'], ['/admin/reports', 'Reports']]
   const showAlerts = !!user && (user.role !== 'super_admin' || !!ownerId) && !platform
@@ -119,6 +120,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <div className="glass card" style={{ position: 'absolute', top: 44, right: 0, zIndex: 30, width: 'min(360px,92vw)', padding: 16, maxHeight: '60vh', overflow: 'auto' }}>
                 {notes?.map(n => <div key={n.id} className="row" style={{ fontSize: 14 }}><span>{n.body}</span></div>)}
                 {!notes?.length && <p className="mute" style={{ margin: 0 }}>No alerts yet.</p>}
+                {(user?.role === 'owner' || user?.role === 'manager') && <PushNotificationControl />}
               </div>
             )}
           </div>

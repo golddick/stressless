@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Backdrop from '@/components/Backdrop'
 import SiteNav from '@/components/SiteNav'
 import { Button, Card, Field, Input } from '@/components/ui'
+import Spinner from '@/components/Spinner'
 import { api } from '@/lib/api'
 import { useSession } from '@/lib/session'
 import { errMsg, homeFor } from '@/lib/format'
@@ -76,7 +77,7 @@ export default function LoginPage() {
                 <Input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" placeholder="Your password" required />
               </Field>
               {error && <p className="err">{error}</p>}
-              <Button type="submit" className="block" disabled={busy}>{busy ? 'Signing in...' : 'Log in'}</Button>
+              <Button type="submit" className="block" disabled={busy} aria-busy={busy}>{busy && <Spinner />}{busy ? 'Signing in...' : 'Log in'}</Button>
               <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                 <Link href="/forgot-password" className="mute" style={{ fontSize: 14 }}>Forgot password?</Link>
                 <Link href="/signup" className="mute" style={{ fontSize: 14 }}>Create account</Link>
@@ -95,7 +96,7 @@ export default function LoginPage() {
                     <Input value={name} onChange={e => setName(e.target.value)} autoComplete="name" placeholder="Jane Doe" />
                   </Field> */}
                   {error && <p className="err">{error}</p>}
-                  <Button type="submit" className="block" disabled={busy}>{busy ? 'Sending...' : 'Send code'}</Button>
+                  <Button type="submit" className="block" disabled={busy} aria-busy={busy}>{busy && <Spinner />}{busy ? 'Sending...' : 'Send code'}</Button>
                   <div style={{ marginTop: 10 }}>
                     <Link href="/forgot-password" className="mute" style={{ fontSize: 14 }}>Forgot password?</Link>
                   </div>
@@ -106,7 +107,7 @@ export default function LoginPage() {
                     <Input value={code} onChange={e => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" required />
                   </Field>
                   {error && <p className="err">{error}</p>}
-                  <Button type="submit" className="block" disabled={busy}>{busy ? 'Checking...' : 'Verify code'}</Button>
+                  <Button type="submit" className="block" disabled={busy} aria-busy={busy}>{busy && <Spinner />}{busy ? 'Checking...' : 'Verify code'}</Button>
                   <button type="button" className="btn g block" style={{ marginTop: 10 }} onClick={() => { setCode(''); setOtpSent(false); setError('') }}>Use a different email or phone</button>
                 </form>
               )}

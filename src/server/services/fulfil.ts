@@ -3,7 +3,7 @@ import { inventory, orderEvents, orderItems, orders, payments, shoppingSessions,
 import { canTransition } from '../../shared/orderState'
 import { formatMoney } from '../../shared/pricing'
 import { sendEmail } from './dropaphi'
-import { notifyStoreTeam } from './notify'
+import { notifyIfNewlyLowStock } from './lowStock'
 import { logOrderEvent } from '../utils/activity'
 import { useDB } from '../utils/db'
 
@@ -13,7 +13,7 @@ import { useDB } from '../utils/db'
  */
 export async function confirmPayment(reference: string, amountMinor: number) {
   const db = useDB()
-  const lowStock: { storeId: string; name: string; qty: number }[] = []
+  const lowStock: { storeId: string; name: string; previous: { quantity: number; lowStockThreshold: number } | null; current: { quantity: number; lowStockThreshold: number } }[] = []
   let orderId = ''
 
   const outcome = await db.transaction(async tx => {
@@ -33,18 +33,21 @@ export async function confirmPayment(reference: string, amountMinor: number) {
     await tx.update(shoppingSessions).set({ status: 'checked_out' }).where(eq(shoppingSessions.id, order.sessionId))
     const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, order.id))
     for (const it of items) {
+      const [before] = await tx.select({ quantity: inventory.quantity, lowStockThreshold: inventory.lowStockThreshold }).from(inventory)
+        .where(and(eq(inventory.storeId, order.storeId), eq(inventory.productId, it.productId)))
+        .for('update').limit(1)
       const [inv] = await tx.update(inventory)
         .set({ quantity: sql`GREATEST(${inventory.quantity} - ${it.quantity}, 0)` })
         .where(and(eq(inventory.storeId, order.storeId), eq(inventory.productId, it.productId)))
-        .returning({ qty: inventory.quantity, threshold: inventory.lowStockThreshold })
-      if (inv && inv.qty <= inv.threshold) lowStock.push({ storeId: order.storeId, name: it.name, qty: inv.qty })
+        .returning({ quantity: inventory.quantity, lowStockThreshold: inventory.lowStockThreshold })
+      if (inv) lowStock.push({ storeId: order.storeId, name: it.name, previous: before ?? null, current: inv })
     }
     await tx.insert(orderEvents).values({ orderId: order.id, type: lateOrder ? 'paid_after_timeout' : 'paid', detail: { reference } })
     return 'paid' as const
   })
 
   if (outcome === 'paid') {
-    for (const l of lowStock) await notifyStoreTeam(l.storeId, 'low_stock', `Low stock: ${l.name} has ${l.qty} left.`, 'Low stock alert')
+    for (const l of lowStock) await notifyIfNewlyLowStock(l.storeId, l.name, l.previous, l.current)
     await sendReceipt(orderId)
   } else if (outcome !== 'duplicate') await logOrderEvent(orderId || null, `payment_${outcome}`, { reference, amountMinor })
   return outcome
@@ -57,6 +60,6 @@ export async function sendReceipt(orderId: string) {
   if (!o?.email) return
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId))
   const rows = items.map(i => `<tr><td>${i.name} × ${i.quantity}</td><td style="text-align:right">${formatMoney(i.unitPriceMinor * i.quantity)}</td></tr>`).join('')
-  await sendEmail(o.email, `Your stressless receipt (${o.store})`,
+  await sendEmail(o.email, `Your stressless-pay receipt (${o.store})`,
     `<h2>Thanks for shopping at ${o.store}</h2><table width="100%">${rows}</table><p>Tax: ${formatMoney(o.order.taxMinor)}<br><b>Total: ${formatMoney(o.order.totalMinor)}</b></p><p>Order ${o.order.id}</p>`, { orderId })
 }
